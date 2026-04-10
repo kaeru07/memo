@@ -33,8 +33,8 @@ export function Results() {
   const ackedAlerts  = alerts.filter(a => a.acknowledged).length
   const appliedDef   = defenseActions.filter(d => d.status === 'applied').length
   const defenseScore = Math.min(100, Math.round(
-    (ackedAlerts  / Math.max(alerts.length, 1))        * 50 +
-    (appliedDef   / Math.max(criticalEvents + 1, 1))   * 50
+    (ackedAlerts / Math.max(alerts.length, 1))         * 50 +
+    (appliedDef  / Math.max(defenseActions.length, 1)) * 50
   ))
 
   const totalScore   = Math.round(objScore * 0.4 + defenseScore * 0.6)
@@ -220,8 +220,8 @@ export function Results() {
               <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{completedObj}/{totalObj}</span>
             </div>
             <div className="objective-list">
-              {scenario?.objectives.map((obj, i) => {
-                const cond = scenarioConditions[i]
+              {scenario?.objectives.map((obj) => {
+                const cond = scenarioConditions.find(c => c.objectiveId === obj.id)
                 return (
                   <div key={obj.id} className={`objective-item${obj.completed ? ' done' : ''}`}>
                     <span className="obj-check" style={{ color: obj.completed ? 'var(--defense-green)' : 'var(--attack-red)' }}>

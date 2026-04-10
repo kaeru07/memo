@@ -18,7 +18,7 @@ function fmtTs(ts: string) {
 }
 
 export function TrafficLog() {
-  const { events, alerts, acknowledgeAlert } = useLabStore()
+  const { events, alerts, acknowledgeAlert, nodes } = useLabStore()
   const [filter, setFilter]   = useState<Filter>('all')
   const [search, setSearch]   = useState('')
   const [tab, setTab]         = useState<'events' | 'alerts'>('events')
@@ -147,8 +147,8 @@ export function TrafficLog() {
                   <td className="mono" style={{ fontSize: 11, color: 'var(--text-muted)' }}>{fmtTs(evt.timestamp)}</td>
                   <td style={{ fontWeight: 500 }}>{evt.type.replace(/_/g, ' ')}</td>
                   <td><span className="badge badge-gray" style={{ fontSize: 10 }}>{evt.protocol.toUpperCase()}</span></td>
-                  <td className="mono" style={{ fontSize: 11 }}>10.0.0.2</td>
-                  <td className="mono" style={{ fontSize: 11 }}>10.0.0.1</td>
+                  <td className="mono" style={{ fontSize: 11 }}>{nodes[evt.sourceNodeId]?.ip ?? evt.sourceNodeId}</td>
+                  <td className="mono" style={{ fontSize: 11 }}>{nodes[evt.targetNodeId]?.ip ?? evt.targetNodeId}</td>
                   <td className="mono" style={{ fontSize: 11, color: 'var(--text-muted)' }}>
                     {evt.targetPort ?? '—'}
                   </td>

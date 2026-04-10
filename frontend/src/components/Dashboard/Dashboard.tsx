@@ -22,7 +22,7 @@ export function Dashboard() {
   const navigate = useNavigate()
   const { session, events, alerts, defenseActions, updateSessionStatus } = useLabStore()
   const { scenarios } = useScenarioStore()
-  const [tick, setTick] = useState(0)
+  const [, forceRender] = useState(0)
 
   const scenario = scenarios.find(s => s.id === session?.scenarioId)
   const unacknowledged = alerts.filter(a => !a.acknowledged)
@@ -35,11 +35,9 @@ export function Dashboard() {
   const score = Math.round((completedObj / totalObj) * 100)
 
   useEffect(() => {
-    const id = setInterval(() => setTick(t => t + 1), 1000)
+    const id = setInterval(() => forceRender(t => t + 1), 1000)
     return () => clearInterval(id)
   }, [])
-
-  const sec = elapsed(session?.startedAt) + tick * 0
 
   return (
     <div className="page fade-in">
@@ -198,6 +196,63 @@ export function Dashboard() {
             </button>
           </div>
         </div>
+
+        {/* Next Action Hint */}
+        {session?.scenarioId === 'scenario-01' && (
+          <NextActionHint
+            completedObj={completedObj}
+            unackCount={unacknowledged.length}
+            appliedDefense={appliedDefense}
+            onNavigate={navigate}
+          />
+        )}
+      </div>
+    </div>
+  )
+}
+
+function NextActionHint({
+  completedObj,
+  unackCount,
+  appliedDefense,
+  onNavigate,
+}: {
+  completedObj: number
+  unackCount: number
+  appliedDefense: number
+  onNavigate: (path: string) => void
+}) {
+  let step = 0
+  let hint = ''
+  let action = ''
+  let actionPath = ''
+
+  if (completedObj === 0) {
+    step = 1; hint = '攻撃コンソールから「Port Scan」を選択して Execute を押してください。'; action = '攻撃コンソールへ'; actionPath = '/attack-console'
+  } else if (completedObj === 1 && unackCount > 0) {
+    step = 2; hint = '通信ログの「アラート」タブを開き、ポートスキャン検知アラートを「✓ 対応済み」にしてください。'; action = 'アラートを確認'; actionPath = '/traffic-log'
+  } else if (completedObj <= 2 && appliedDefense === 0) {
+    step = 3; hint = '防御ページで「IP ブロック」を選択し、10.0.0.2 をブロックしてください。'; action = '防御ページへ'; actionPath = '/defense'
+  } else if (completedObj === 3) {
+    step = 4; hint = '攻撃コンソールから再度 Port Scan を実行して、遮断されていることを確認してください。'; action = '攻撃コンソールへ'; actionPath = '/attack-console'
+  } else if (completedObj >= 4) {
+    step = 5; hint = 'すべての目標を達成しました！結果ページでスコアを確認しましょう。'; action = '結果を見る'; actionPath = '/results'
+  }
+
+  if (!hint) return null
+
+  return (
+    <div className="card" style={{ border: '1px solid rgba(0,212,255,0.3)', background: 'rgba(0,212,255,0.04)' }}>
+      <div className="card-header">
+        <h3 style={{ color: 'var(--accent-cyan)' }}>💡 次のステップ (Step {step}/4)</h3>
+      </div>
+      <div style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 16 }}>
+        <div style={{ flex: 1, fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+          {hint}
+        </div>
+        <button className="btn btn-outline" style={{ whiteSpace: 'nowrap' }} onClick={() => onNavigate(actionPath)}>
+          {action} →
+        </button>
       </div>
     </div>
   )

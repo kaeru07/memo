@@ -34,6 +34,14 @@ export function Scenarios() {
   function handleStart() {
     if (!selectedScenario) return
 
+    // アクティブなセッションが別シナリオで実行中の場合は確認
+    if (session?.status === 'running' && session.scenarioId !== selectedScenario.id) {
+      const ok = window.confirm(
+        `現在「${scenarios.find(s => s.id === session.scenarioId)?.name ?? session.scenarioId}」が実行中です。\n別のシナリオを開始すると、現在のセッションが終了します。\n続けますか？`
+      )
+      if (!ok) return
+    }
+
     // ① ラボのイベント・アラート・防御アクションをリセット
     resetLab()
 

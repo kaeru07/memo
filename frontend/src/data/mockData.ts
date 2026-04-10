@@ -39,8 +39,8 @@ export function initMockData() {
       category: 'reconnaissance',
       difficulty: 'beginner',
       objectives: [
-        { id: 'obj-01-1', description: 'ポートスキャンを実行する', completed: true },
-        { id: 'obj-01-2', description: '検知アラートに対応する（Acknowledge）', completed: true },
+        { id: 'obj-01-1', description: 'ポートスキャンを実行する', completed: false },
+        { id: 'obj-01-2', description: '検知アラートに対応する（Acknowledge）', completed: false },
         { id: 'obj-01-3', description: '攻撃元IPを遮断する', completed: false },
         { id: 'obj-01-4', description: '遮断後に再スキャンして確認する', completed: false },
       ],
