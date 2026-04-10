@@ -198,8 +198,9 @@ export function Dashboard() {
         </div>
 
         {/* Next Action Hint */}
-        {session?.scenarioId === 'scenario-01' && (
+        {session?.scenarioId && (
           <NextActionHint
+            scenarioId={session.scenarioId}
             completedObj={completedObj}
             unackCount={unacknowledged.length}
             appliedDefense={appliedDefense}
@@ -211,47 +212,113 @@ export function Dashboard() {
   )
 }
 
+interface HintStep { step: number; hint: string; action: string; actionPath: string }
+
+function resolveHint(
+  scenarioId: string,
+  completedObj: number,
+  unackCount: number,
+  appliedDefense: number,
+): HintStep | null {
+  const done = (s: number, h: string, a: string, p: string): HintStep => ({ step: s, hint: h, action: a, actionPath: p })
+
+  switch (scenarioId) {
+
+    case 'scenario-01':
+      if (completedObj === 0)
+        return done(1, '攻撃コンソールで「Port Scan」を選択して Execute を押してください。', '攻撃コンソールへ', '/attack-console')
+      if (unackCount > 0 && completedObj < 3)
+        return done(2, '通信ログ → アラートタブでポートスキャン検知アラートを「✓ 対応済み」にしてください。', 'アラートを確認', '/traffic-log')
+      if (appliedDefense === 0 && completedObj < 3)
+        return done(3, '防御ページで「IP ブロック」を選択し、攻撃元 10.0.0.2 をブロックしてください。', '防御ページへ', '/defense')
+      if (completedObj === 3)
+        return done(4, '攻撃コンソールで再度 Port Scan を実行して、遮断されていることを確認してください。', '攻撃コンソールへ', '/attack-console')
+      if (completedObj >= 4)
+        return done(5, 'すべての目標を達成しました！結果ページでスコアを確認しましょう。', '結果を見る', '/results')
+      return null
+
+    case 'scenario-02':
+      if (completedObj === 0)
+        return done(1, '攻撃コンソールで「SSH Brute Force」を選択し、Execute を 3 回以上繰り返してください。', '攻撃コンソールへ', '/attack-console')
+      if (unackCount > 0 && completedObj < 3)
+        return done(2, '通信ログ → アラートタブでブルートフォース検知アラートを「✓ 対応済み」にしてください。', 'アラートを確認', '/traffic-log')
+      if (completedObj < 3)
+        return done(3, '防御ページで「レート制限」または「IP ブロック」を適用してアカウントをロックしてください。', '防御ページへ', '/defense')
+      if (completedObj === 3)
+        return done(4, '防御ページで「ポート閉鎖」を選択し、SSH ポート 22 を閉鎖して攻撃を封鎖してください。', '防御ページへ', '/defense')
+      if (completedObj >= 4)
+        return done(5, 'すべての目標を達成しました！結果ページでスコアを確認しましょう。', '結果を見る', '/results')
+      return null
+
+    case 'scenario-03':
+      if (completedObj === 0)
+        return done(1, '攻撃コンソールで「TCP Connect」を選択し、不審なポート（例: 4444）を指定して Execute してください。マルウェアのC2通信をシミュレートします。', '攻撃コンソールへ', '/attack-console')
+      if (unackCount > 0 && completedObj < 3)
+        return done(2, '通信ログ → アラートタブで異常トラフィックアラートを「✓ 対応済み」にしてください。', 'アラートを確認', '/traffic-log')
+      if (completedObj < 3)
+        return done(3, '防御ページで「ノード隔離」を選択し、感染ノードをネットワークから完全に隔離してください。', '防御ページへ', '/defense')
+      if (completedObj === 3)
+        return done(4, '攻撃コンソールで再度 TCP Connect を実行し、通信が遮断されていることを確認してください。', '攻撃コンソールへ', '/attack-console')
+      if (completedObj >= 4)
+        return done(5, 'すべての目標を達成しました！結果ページでスコアを確認しましょう。', '結果を見る', '/results')
+      return null
+
+    case 'scenario-04':
+      if (completedObj === 0)
+        return done(1, '攻撃コンソールで「TCP Connect」を選択し、不審なポート（例: 8888）を指定して Execute してください。', '攻撃コンソールへ', '/attack-console')
+      if (unackCount > 0 && completedObj < 3)
+        return done(2, '通信ログ → アラートタブで異常アクセスアラートを「✓ 対応済み」にしてください。', 'アラートを確認', '/traffic-log')
+      if (completedObj < 3)
+        return done(3, '防御ページで「ファイアウォールルール」または「ポート閉鎖」を適用してポートをブロックしてください。', '防御ページへ', '/defense')
+      if (completedObj === 3)
+        return done(4, '攻撃コンソールで再度 TCP Connect を実行し、ファイアウォールが機能していることを確認してください。', '攻撃コンソールへ', '/attack-console')
+      if (completedObj >= 4)
+        return done(5, 'すべての目標を達成しました！結果ページでスコアを確認しましょう。', '結果を見る', '/results')
+      return null
+
+    default:
+      return null
+  }
+}
+
 function NextActionHint({
+  scenarioId,
   completedObj,
   unackCount,
   appliedDefense,
   onNavigate,
 }: {
+  scenarioId: string
   completedObj: number
   unackCount: number
   appliedDefense: number
   onNavigate: (path: string) => void
 }) {
-  let step = 0
-  let hint = ''
-  let action = ''
-  let actionPath = ''
-
-  if (completedObj === 0) {
-    step = 1; hint = '攻撃コンソールから「Port Scan」を選択して Execute を押してください。'; action = '攻撃コンソールへ'; actionPath = '/attack-console'
-  } else if (completedObj === 1 && unackCount > 0) {
-    step = 2; hint = '通信ログの「アラート」タブを開き、ポートスキャン検知アラートを「✓ 対応済み」にしてください。'; action = 'アラートを確認'; actionPath = '/traffic-log'
-  } else if (completedObj <= 2 && appliedDefense === 0) {
-    step = 3; hint = '防御ページで「IP ブロック」を選択し、10.0.0.2 をブロックしてください。'; action = '防御ページへ'; actionPath = '/defense'
-  } else if (completedObj === 3) {
-    step = 4; hint = '攻撃コンソールから再度 Port Scan を実行して、遮断されていることを確認してください。'; action = '攻撃コンソールへ'; actionPath = '/attack-console'
-  } else if (completedObj >= 4) {
-    step = 5; hint = 'すべての目標を達成しました！結果ページでスコアを確認しましょう。'; action = '結果を見る'; actionPath = '/results'
-  }
-
+  const hint = resolveHint(scenarioId, completedObj, unackCount, appliedDefense)
   if (!hint) return null
 
+  const isCompleted = hint.step === 5
+
   return (
-    <div className="card" style={{ border: '1px solid rgba(0,212,255,0.3)', background: 'rgba(0,212,255,0.04)' }}>
+    <div className="card" style={{
+      border: `1px solid ${isCompleted ? 'rgba(0,230,118,0.3)' : 'rgba(0,212,255,0.3)'}`,
+      background: isCompleted ? 'rgba(0,230,118,0.04)' : 'rgba(0,212,255,0.04)',
+    }}>
       <div className="card-header">
-        <h3 style={{ color: 'var(--accent-cyan)' }}>💡 次のステップ (Step {step}/4)</h3>
+        <h3 style={{ color: isCompleted ? 'var(--defense-green)' : 'var(--accent-cyan)' }}>
+          {isCompleted ? '🎉 完了' : `💡 次のステップ (Step ${hint.step}/4)`}
+        </h3>
       </div>
       <div style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 16 }}>
         <div style={{ flex: 1, fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-          {hint}
+          {hint.hint}
         </div>
-        <button className="btn btn-outline" style={{ whiteSpace: 'nowrap' }} onClick={() => onNavigate(actionPath)}>
-          {action} →
+        <button
+          className={`btn ${isCompleted ? 'btn-success' : 'btn-outline'}`}
+          style={{ whiteSpace: 'nowrap' }}
+          onClick={() => onNavigate(hint.actionPath)}
+        >
+          {hint.action} →
         </button>
       </div>
     </div>

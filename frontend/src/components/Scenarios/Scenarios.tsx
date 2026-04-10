@@ -18,6 +18,13 @@ const DIFF_ICON: Record<string, string> = {
   expert:       '★★★★',
 }
 
+const DIFF_LABEL: Record<string, string> = {
+  beginner:     '初級',
+  intermediate: '中級',
+  advanced:     '上級',
+  expert:       '熟練',
+}
+
 export function Scenarios() {
   const navigate = useNavigate()
   const { scenarios, selectedScenario, selectScenario, clearSelection, resetScenarioObjectives } = useScenarioStore()
@@ -103,7 +110,7 @@ export function Scenarios() {
           <div style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>難易度:</div>
           {(['beginner', 'intermediate', 'advanced', 'expert'] as const).map(d => (
             <div key={d} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span className={`difficulty-badge ${d}`}>{d}</span>
+              <span className={`difficulty-badge ${d}`}>{DIFF_LABEL[d]}</span>
               <span>{DIFF_ICON[d]}</span>
             </div>
           ))}
@@ -149,7 +156,8 @@ function ScenarioCard({
 
       <div className="scenario-card-meta">
         <span className={`difficulty-badge ${scenario.difficulty}`}>
-          {scenario.difficulty}
+          {DIFF_LABEL[scenario.difficulty] ?? scenario.difficulty}
+          {' '}{DIFF_ICON[scenario.difficulty]}
         </span>
         <span className="badge badge-gray">
           {CATEGORY_LABEL[scenario.category] ?? scenario.category}

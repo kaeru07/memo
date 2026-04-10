@@ -84,34 +84,69 @@ export const SCENARIO_CONDITIONS: Record<string, ScenarioCondition[]> = {
     },
   ],
 
-  // Scenario 03: Web アプリケーション攻撃
+  // Scenario 03: 異常通信検知（マルウェアC2通信 → ノード隔離）
   'scenario-03': [
     {
       objectiveId: 'obj-03-1',
-      label: 'payload_injection イベントを発生させる',
+      label: '手動 tcp_connect イベントを発生させる（C2通信シミュレーション）',
       check: (events) =>
-        events.some(e => e.type === 'payload_injection'),
+        events.some(e => e.type === 'tcp_connect' && e.metadata?.manual === true),
     },
     {
       objectiveId: 'obj-03-2',
-      label: 'firewall_rule が適用済み',
-      check: (_, __, defenseActions) =>
-        defenseActions.some(d => d.type === 'firewall_rule' && d.status === 'applied'),
+      label: 'anomalous_traffic アラートを対応済みにする',
+      check: (_, alerts) =>
+        alerts.some(a => a.type === 'anomalous_traffic' && a.acknowledged === true),
     },
     {
       objectiveId: 'obj-03-3',
-      label: 'firewall_rule + rate_limit の両方が適用済み',
+      label: 'isolate_node が適用済み',
       check: (_, __, defenseActions) =>
-        defenseActions.some(d => d.type === 'firewall_rule' && d.status === 'applied') &&
-        defenseActions.some(d => d.type === 'rate_limit'    && d.status === 'applied'),
+        defenseActions.some(d => d.type === 'isolate_node' && d.status === 'applied'),
     },
     {
       objectiveId: 'obj-03-4',
-      label: 'injection + http_request + firewall_rule がすべて揃う',
-      check: (events, _, defenseActions) =>
-        events.some(e => e.type === 'payload_injection') &&
-        events.some(e => e.type === 'http_request') &&
-        defenseActions.some(d => d.type === 'firewall_rule' && d.status === 'applied'),
+      label: '隔離後に tcp_connect を再実行（手動2回以上）',
+      check: (events, _, defenseActions) => {
+        const hasIsolation = defenseActions.some(d => d.type === 'isolate_node' && d.status === 'applied')
+        const manualConnects = events.filter(e => e.type === 'tcp_connect' && e.metadata?.manual === true)
+        return hasIsolation && manualConnects.length >= 2
+      },
+    },
+  ],
+
+  // Scenario 04: ポート異常アクセス（不審ポート → Firewall rule）
+  'scenario-04': [
+    {
+      objectiveId: 'obj-04-1',
+      label: '手動 tcp_connect イベントを発生させる（不審ポートへのアクセス）',
+      check: (events) =>
+        events.some(e => e.type === 'tcp_connect' && e.metadata?.manual === true),
+    },
+    {
+      objectiveId: 'obj-04-2',
+      label: 'anomalous_traffic アラートが存在する',
+      check: (_, alerts) =>
+        alerts.some(a => a.type === 'anomalous_traffic'),
+    },
+    {
+      objectiveId: 'obj-04-3',
+      label: 'firewall_rule または block_port が適用済み',
+      check: (_, __, defenseActions) =>
+        defenseActions.some(
+          d => (d.type === 'firewall_rule' || d.type === 'block_port') && d.status === 'applied'
+        ),
+    },
+    {
+      objectiveId: 'obj-04-4',
+      label: 'Firewall設定後に tcp_connect を再実行（手動2回以上）',
+      check: (events, _, defenseActions) => {
+        const hasFirewall = defenseActions.some(
+          d => (d.type === 'firewall_rule' || d.type === 'block_port') && d.status === 'applied'
+        )
+        const manualConnects = events.filter(e => e.type === 'tcp_connect' && e.metadata?.manual === true)
+        return hasFirewall && manualConnects.length >= 2
+      },
     },
   ],
 }
