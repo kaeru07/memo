@@ -15,3 +15,7 @@ backend/**/__pycache__/
 
 # OS
 .DS_Store
+
+# Python 仮想環境（環境ごとに作り直すもの）
+backend/.venv/
+.venv/
